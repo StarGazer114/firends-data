@@ -57,6 +57,7 @@ jobs:
           cp friends.ts "content-repo/$TARGET_FILE"
 
       - name: Commit and push
+        id: push
         run: |
           cd content-repo
           git config user.name "github-actions[bot]"
@@ -64,7 +65,19 @@ jobs:
           git add "${{ steps.config.outputs.target_file }}"
           if git diff --staged --quiet; then
             echo "No changes, skipping commit"
+            echo "changed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           git commit -m "chore(friends): update friends.ts (triggered by #${{ github.event.issue.number }})"
           git push
+          echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Trigger deploy
+        if: steps.push.outputs.changed == 'true'
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.CONTENT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ steps.config.outputs.target_repo }}/actions/workflows/cloudflare-deploy.yml/dispatches \
+            -d "{\"ref\":\"${{ steps.config.outputs.target_branch }}\"}"
+          echo "✅ 已触发内容仓库部署"
