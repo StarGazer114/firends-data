@@ -1,6 +1,6 @@
 name: 构建友链数据
 
-on:
+'on':
   issues:
     types: [labeled]  # 仅在 Issue 标签变动时触发
 
