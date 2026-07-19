@@ -18,7 +18,7 @@ body:
     id: title
     attributes:
       label: 站点名称
-      placeholder: 例：雪萌天文台
+      placeholder: 例：拾光小阁
     validations:
       required: true
 
@@ -26,7 +26,7 @@ body:
     id: siteurl
     attributes:
       label: 站点链接
-      placeholder: 例：https://blog.snowy.moe/
+      placeholder: 例：https://blog.bear556.top/
       description: 请确保链接以 https:// 开头且可以正常访问
     validations:
       required: true
@@ -35,7 +35,6 @@ body:
     id: imgurl
     attributes:
       label: 头像链接
-      placeholder: 例：https://blog.snowy.moe/avatar.png
       description: 请确保图片链接以 https:// 开头且可以正常访问，建议使用正方形图片
     validations:
       required: true
@@ -44,7 +43,6 @@ body:
     id: desc
     attributes:
       label: 站点描述
-      placeholder: 例：发现巷子里的那颗星星
       description: 建议控制在 30 字以内
     validations:
       required: true
