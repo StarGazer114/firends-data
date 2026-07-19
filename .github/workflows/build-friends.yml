@@ -1,6 +1,6 @@
 name: 构建友链数据
 
-"on":
+on:
   issues:
     types: [labeled]  # 仅在 Issue 标签变动时触发
 
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # 仅当打上的标签等于「审核通过」时才实际运行
-    if: ${{ github.event.label.name == '审核通过' }}
+    if: github.event.label.name == '审核通过'
 
     steps:
       # ── 1. 读取配置文件 ────────────────────────────────────────────────────
