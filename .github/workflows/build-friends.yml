@@ -2,12 +2,12 @@ name: Build Friends Data
 
 'on':
   issues:
-    types: [labeled]
+    types: [labeled, closed]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.event.label.name == '审核通过'
+    if: github.event.label.name == '审核通过' || github.event.action == 'closed'
 
     steps:
       - name: Checkout
