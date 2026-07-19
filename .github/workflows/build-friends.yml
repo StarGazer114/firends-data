@@ -1,100 +1,70 @@
-name: 构建友链数据
+name: Build Friends Data
 
 'on':
   issues:
-    types: [labeled]  # 仅在 Issue 标签变动时触发
+    types: [labeled]
 
 jobs:
   build:
-    name: 生成 friends.ts 并推送到内容仓库
     runs-on: ubuntu-latest
-
-    # 仅当打上的标签等于「审核通过」时才实际运行
     if: github.event.label.name == '审核通过'
 
     steps:
-      # ── 1. 读取配置文件 ────────────────────────────────────────────────────
-      - name: 检出友链管理仓库
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 解析 config.yml
+      - name: Parse config.yml
         id: config
         run: |
-          # 从 config.yml 读取各项配置，写入 GitHub Actions 输出变量
           APPROVED_LABEL=$(python3 -c "import yaml; c=yaml.safe_load(open('config.yml')); print(c['labels']['approved'])")
           TARGET_REPO=$(python3 -c "import yaml; c=yaml.safe_load(open('config.yml')); print(c['target']['repo'])")
           TARGET_FILE=$(python3 -c "import yaml; c=yaml.safe_load(open('config.yml')); print(c['target']['file'])")
           TARGET_BRANCH=$(python3 -c "import yaml; c=yaml.safe_load(open('config.yml')); print(c['target']['branch'])")
           DEFAULT_TAGS=$(python3 -c "import yaml,json; c=yaml.safe_load(open('config.yml')); print(json.dumps(c['defaults']['tags'], ensure_ascii=False))")
+          echo "approved_label=$APPROVED_LABEL" >> $GITHUB_OUTPUT
+          echo "target_repo=$TARGET_REPO" >> $GITHUB_OUTPUT
+          echo "target_file=$TARGET_FILE" >> $GITHUB_OUTPUT
+          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "default_tags=$DEFAULT_TAGS" >> $GITHUB_OUTPUT
 
-          echo "approved_label=$APPROVED_LABEL"   >> $GITHUB_OUTPUT
-          echo "target_repo=$TARGET_REPO"         >> $GITHUB_OUTPUT
-          echo "target_file=$TARGET_FILE"         >> $GITHUB_OUTPUT
-          echo "target_branch=$TARGET_BRANCH"     >> $GITHUB_OUTPUT
-          echo "default_tags=$DEFAULT_TAGS"       >> $GITHUB_OUTPUT
-
-          echo "✅ 配置读取成功"
-          echo "   审核通过标签：$APPROVED_LABEL"
-          echo "   目标仓库：$TARGET_REPO"
-          echo "   目标文件：$TARGET_FILE / 分支：$TARGET_BRANCH"
-          echo "   默认 tags：$DEFAULT_TAGS"
-
-      # ── 2. 安装 Node.js ────────────────────────────────────────────────────
-      - name: 安装 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      # ── 3. 运行构建脚本，生成 friends.ts ──────────────────────────────────
-      - name: 生成 friends.ts
+      - name: Build friends.ts
         env:
-          GH_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
-          ISSUES_REPO:    ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUES_REPO: ${{ github.repository }}
           APPROVED_LABEL: ${{ steps.config.outputs.approved_label }}
-          OWNER_LOGIN:    ${{ github.repository_owner }}
-          DEFAULT_TAGS:   ${{ steps.config.outputs.default_tags }}
-          OUTPUT_FILE:    friends.ts
+          OWNER_LOGIN: ${{ github.repository_owner }}
+          DEFAULT_TAGS: ${{ steps.config.outputs.default_tags }}
+          OUTPUT_FILE: friends.ts
         run: node .github/scripts/build-friends.js
 
-      # ── 4. 检出目标内容仓库，推送生成的文件 ──────────────────────────────
-      - name: 检出内容仓库
+      - name: Checkout content repo
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.config.outputs.target_repo }}
-          token:      ${{ secrets.CONTENT_REPO_TOKEN }}
-          path:       content-repo
-          ref:        ${{ steps.config.outputs.target_branch }}
+          token: ${{ secrets.CONTENT_REPO_TOKEN }}
+          path: content-repo
+          ref: ${{ steps.config.outputs.target_branch }}
 
-      - name: 复制生成文件到内容仓库
+      - name: Copy file to content repo
         run: |
           TARGET_FILE="${{ steps.config.outputs.target_file }}"
-          TARGET_DIR=$(dirname "content-repo/$TARGET_FILE")
-          mkdir -p "$TARGET_DIR"
+          mkdir -p "content-repo/$(dirname $TARGET_FILE)"
           cp friends.ts "content-repo/$TARGET_FILE"
-          echo "✅ 文件已复制到 content-repo/$TARGET_FILE"
 
-      - name: 提交并推送
+      - name: Commit and push
         run: |
           cd content-repo
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 检查文件是否有实际变化
-          if git diff --quiet; then
-            echo "📭 文件无变化，跳过提交"
+          git add "${{ steps.config.outputs.target_file }}"
+          if git diff --staged --quiet; then
+            echo "No changes, skipping commit"
             exit 0
           fi
-
-          # 获取触发本次构建的 Issue 信息，写入 commit message
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          TRIGGER_REPO="${{ github.repository }}"
-
-          git add "${{ steps.config.outputs.target_file }}"
-          git commit -m "chore(friends): update friends.ts
-
-  Triggered by: ${TRIGGER_REPO}#${ISSUE_NUMBER} ${ISSUE_TITLE}
-  Action run:   ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
+          git commit -m "chore(friends): update friends.ts (triggered by #${{ github.event.issue.number }})"
           git push
-          echo "🚀 friends.ts 已成功推送到内容仓库"
