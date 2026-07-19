@@ -1,0 +1,19 @@
+# 友链管理仓库配置文件
+# 修改此文件后需重新推送，Actions 会在每次运行时读取最新配置
+
+# 标签配置
+labels:
+  approved: "审核通过"     # 打上此标签时触发构建，且该 Issue 会被收录进友链
+  pending: "待审核"        # 提交 Issue 后自动打上的初始标签（需配合 Actions 实现）
+  rejected: "审核拒绝"     # 拒绝标签，仅作标识用途，不参与构建
+
+# 目标仓库配置
+target:
+  repo: "StarGazer114/Mizuki-content"   # 生成文件推送的目标仓库
+  file: "data/friends.ts"               # 目标仓库中的目标文件路径
+  branch: "main"                         # 目标仓库的分支（没有 main 则改为 master）
+
+# 默认值配置
+defaults:
+  tags:                  # Issue 无 /tags 指令时使用的默认分类
+    - "朋友们"
