@@ -11,7 +11,7 @@ labels:
 target:
   repo: "StarGazer114/Mizuki-content"   # 生成文件推送的目标仓库
   file: "data/friends.ts"               # 目标仓库中的目标文件路径
-  branch: "main"                         # 目标仓库的分支（没有 main 则改为 master）
+  branch: "master"                       # 目标仓库的分支
 
 # 默认值配置
 defaults:
