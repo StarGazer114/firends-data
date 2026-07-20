@@ -7,7 +7,7 @@ name: Build Friends Data
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.event.label.name == '审核通过' || github.event.action == 'closed'
+    if: (github.event.label.name == '审核通过' || github.event.action == 'closed') && github.event.sender.login == 'StarGazer114'
 
     steps:
       - name: Checkout
